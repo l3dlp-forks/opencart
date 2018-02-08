@@ -23,49 +23,44 @@ function getURLVar(key) {
 }
 
 $(document).ready(function() {
-	// Adding the clear Fix
-	cols1 = $('#column-right, #column-left').length;
-	
-	if (cols1 == 2) {
-		$('#content .product-layout:nth-child(2n+2)').after('<div class="clearfix visible-md visible-sm"></div>');
-	} else if (cols1 == 1) {
-		$('#content .product-layout:nth-child(3n+3)').after('<div class="clearfix visible-lg"></div>');
-	} else {
-		$('#content .product-layout:nth-child(4n+4)').after('<div class="clearfix"></div>');
-	}
-	
+	// Add new div on each page
+	$('body').append('<div id="alert-box"></div>');
+
+	$('#alert-box').on('click', '.close', function(){
+		$('#alert-box').removeClass('open');
+	});
+
 	// Highlight any found errors
 	$('.text-danger').each(function() {
 		var element = $(this).parent().parent();
-		
+
 		if (element.hasClass('form-group')) {
 			element.addClass('has-error');
 		}
 	});
-		
-	// Currency
-	$('#currency .currency-select').on('click', function(e) {
-		e.preventDefault();
 
-		$('#currency input[name=\'code\']').attr('value', $(this).attr('name'));
+	// tooltips on hover
+	$('[data-toggle=\'tooltip\']').tooltip({container: 'body'});
 
-		$('#currency').submit();
+	// Makes tooltips work on ajax generated content
+	$(document).ajaxStop(function() {
+		$('[data-toggle=\'tooltip\']').tooltip({container: 'body'});
 	});
 
-	// Language
-	$('#language a').on('click', function(e) {
+	// Currency
+	$('#form-currency .currency-select').on('click', function(e) {
 		e.preventDefault();
 
-		$('#language input[name=\'code\']').attr('value', $(this).attr('href'));
+		$('#form-currency input[name=\'code\']').val($(this).attr('name'));
 
-		$('#language').submit();
+		$('#form-currency').submit();
 	});
 
 	/* Search */
 	$('#search input[name=\'search\']').parent().find('button').on('click', function() {
-		url = $('base').attr('href') + 'index.php?route=product/search';
+		var url = $('base').attr('href') + 'index.php?route=product/search';
 
-		var value = $('header input[name=\'search\']').val();
+		var value = $('header #search input[name=\'search\']').val();
 
 		if (value) {
 			url += '&search=' + encodeURIComponent(value);
@@ -76,7 +71,7 @@ $(document).ready(function() {
 
 	$('#search input[name=\'search\']').on('keydown', function(e) {
 		if (e.keyCode == 13) {
-			$('header input[name=\'search\']').parent().find('button').trigger('click');
+			$('header #search input[name=\'search\']').parent().find('button').trigger('click');
 		}
 	});
 
@@ -88,58 +83,55 @@ $(document).ready(function() {
 		var i = (dropdown.left + $(this).outerWidth()) - (menu.left + $('#menu').outerWidth());
 
 		if (i > 0) {
-			$(this).css('margin-left', '-' + (i + 5) + 'px');
+			$(this).css('margin-left', '-' + (i + 10) + 'px');
 		}
 	});
 
 	// Product List
 	$('#list-view').click(function() {
-		$('#content .product-layout > .clearfix').remove();
+		$('#content .product-grid > .clearfix').remove();
 
-		//$('#content .product-layout').attr('class', 'product-layout product-list col-xs-12');
-		$('#content .row > .product-layout').attr('class', 'product-layout product-list col-xs-12');
-		
+		$('#content .row > .product-grid').attr('class', 'product-layout product-list col-xs-12');
+
+		$('#grid-view').removeClass('active');
+		$('#list-view').addClass('active');
+
 		localStorage.setItem('display', 'list');
 	});
 
 	// Product Grid
 	$('#grid-view').click(function() {
-		$('#content .product-layout > .clearfix').remove();
-
 		// What a shame bootstrap does not take into account dynamically loaded columns
-		cols = $('#column-right, #column-left').length;
+		var cols = $('#column-right, #column-left').length;
 
 		if (cols == 2) {
-			$('#content .product-layout').attr('class', 'product-layout product-grid col-lg-6 col-md-6 col-sm-12 col-xs-12');
+			$('#content .product-list').attr('class', 'product-layout product-grid col-lg-6 col-md-6 col-sm-12 col-xs-12');
 		} else if (cols == 1) {
-			$('#content .product-layout').attr('class', 'product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12');
+			$('#content .product-list').attr('class', 'product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12');
 		} else {
-			$('#content .product-layout').attr('class', 'product-layout product-grid col-lg-3 col-md-3 col-sm-6 col-xs-12');
+			$('#content .product-list').attr('class', 'product-layout product-grid col-lg-3 col-md-3 col-sm-6 col-xs-12');
 		}
 
-		 localStorage.setItem('display', 'grid');
+		$('#list-view').removeClass('active');
+		$('#grid-view').addClass('active');
+
+		localStorage.setItem('display', 'grid');
 	});
 
 	if (localStorage.getItem('display') == 'list') {
 		$('#list-view').trigger('click');
+		$('#list-view').addClass('active');
 	} else {
 		$('#grid-view').trigger('click');
+		$('#grid-view').addClass('active');
 	}
-
-	// tooltips on hover
-	$('[data-toggle=\'tooltip\']').tooltip({container: 'body'});
-
-	// Makes tooltips work on ajax generated content
-	$(document).ajaxStop(function() {
-		$('[data-toggle=\'tooltip\']').tooltip({container: 'body'});
-	});
 });
 
 // Cart add remove functions
 var cart = {
-	'add': function(product_id, quantity) {
+	'add': function(product_id, quantity, language) {
 		$.ajax({
-			url: 'index.php?route=checkout/cart/add',
+			url: 'index.php?route=checkout/cart/add&language=' + language,
 			type: 'post',
 			data: 'product_id=' + product_id + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1),
 			dataType: 'json',
@@ -148,32 +140,31 @@ var cart = {
 			},
 			complete: function() {
 				$('#cart > button').button('reset');
-			},			
+			},
 			success: function(json) {
-				$('.alert, .text-danger').remove();
+				$('.alert-dismissible, .text-danger').remove();
 
 				if (json['redirect']) {
 					location = json['redirect'];
 				}
 
 				if (json['success']) {
-					$('#content').parent().before('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
-					
-					// Need to set timeout otherwise it wont update the total
-					setTimeout(function () {
-						$('#cart > button').html('<span id="cart-total"><i class="fa fa-shopping-cart"></i> ' + json['total'] + '</span>');
-					}, 100);
-				
-					$('html, body').animate({ scrollTop: 0 }, 'slow');
+					$('#alert-box').append('<div class="alert alert-success alert-dismissible">' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 
-					$('#cart > ul').load('index.php?route=common/cart/info ul li');
+					$('#alert-box').addClass('open');
+
+					// Need to set timeout otherwise it wont update the total
+					$('#cart').parent().load('index.php?route=common/cart/info');
 				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	},
-	'update': function(key, quantity) {
+	'update': function(key, quantity, language) {
 		$.ajax({
-			url: 'index.php?route=checkout/cart/edit',
+			url: 'index.php?route=checkout/cart/edit' + language,
 			type: 'post',
 			data: 'key=' + key + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1),
 			dataType: 'json',
@@ -182,7 +173,7 @@ var cart = {
 			},
 			complete: function() {
 				$('#cart > button').button('reset');
-			},			
+			},
 			success: function(json) {
 				// Need to set timeout otherwise it wont update the total
 				setTimeout(function () {
@@ -192,14 +183,17 @@ var cart = {
 				if (getURLVar('route') == 'checkout/cart' || getURLVar('route') == 'checkout/checkout') {
 					location = 'index.php?route=checkout/cart';
 				} else {
-					$('#cart > ul').load('index.php?route=common/cart/info ul li');
+					$('#cart').parent().load('index.php?route=common/cart/info&language={{ language }}');
 				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	},
-	'remove': function(key) {
+	'remove': function(key, language) {
 		$.ajax({
-			url: 'index.php?route=checkout/cart/remove',
+			url: 'index.php?route=checkout/cart/remove' + language,
 			type: 'post',
 			data: 'key=' + key,
 			dataType: 'json',
@@ -208,28 +202,26 @@ var cart = {
 			},
 			complete: function() {
 				$('#cart > button').button('reset');
-			},			
+			},
 			success: function(json) {
-				// Need to set timeout otherwise it wont update the total
-				setTimeout(function () {
-					$('#cart > button').html('<span id="cart-total"><i class="fa fa-shopping-cart"></i> ' + json['total'] + '</span>');
-				}, 100);
-					
 				if (getURLVar('route') == 'checkout/cart' || getURLVar('route') == 'checkout/checkout') {
-					location = 'index.php?route=checkout/cart';
+					location = 'index.php?route=checkout/cart&language={{ language }}';
 				} else {
-					$('#cart > ul').load('index.php?route=common/cart/info ul li');
+					$('#cart').parent().load('index.php?route=common/cart/info&language={{ language }}');
 				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	}
-}
+};
 
 var voucher = {
 	'add': function() {
 
 	},
-	'remove': function(key) {
+	'remove': function(key, language) {
 		$.ajax({
 			url: 'index.php?route=checkout/cart/remove',
 			type: 'post',
@@ -250,67 +242,80 @@ var voucher = {
 				if (getURLVar('route') == 'checkout/cart' || getURLVar('route') == 'checkout/checkout') {
 					location = 'index.php?route=checkout/cart';
 				} else {
-					$('#cart > ul').load('index.php?route=common/cart/info ul li');
+					$('#cart').parent().load('index.php?route=common/cart/info ul li');
 				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	}
-}
+};
 
 var wishlist = {
-	'add': function(product_id) {
+	'add': function(product_id, language) {
 		$.ajax({
 			url: 'index.php?route=account/wishlist/add',
 			type: 'post',
 			data: 'product_id=' + product_id,
 			dataType: 'json',
 			success: function(json) {
-				$('.alert').remove();
+				$('.alert-dismissible').remove();
 
-				if (json['success']) {
-					$('#content').parent().before('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				if (json['redirect']) {
+					location = json['redirect'];
 				}
 
-				if (json['info']) {
-					$('#content').parent().before('<div class="alert alert-info"><i class="fa fa-info-circle"></i> ' + json['info'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				if (json['success']) {
+					$('#alert-box').append('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+
+					$('#alert-box').addClass('open');
 				}
 
 				$('#wishlist-total span').html(json['total']);
 				$('#wishlist-total').attr('title', json['total']);
 
 				$('html, body').animate({ scrollTop: 0 }, 'slow');
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	},
 	'remove': function() {
 
 	}
-}
+};
 
 var compare = {
-	'add': function(product_id) {
+	'add': function(product_id, language) {
 		$.ajax({
 			url: 'index.php?route=product/compare/add',
 			type: 'post',
 			data: 'product_id=' + product_id,
 			dataType: 'json',
 			success: function(json) {
-				$('.alert').remove();
+				$('.alert-dismissible').remove();
 
 				if (json['success']) {
-					$('#content').parent().before('<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + json['success'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('#alert-box').append('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+
+					$('#alert-box').addClass('open');
 
 					$('#compare-total').html(json['total']);
 
 					$('html, body').animate({ scrollTop: 0 }, 'slow');
 				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	},
 	'remove': function() {
 
 	}
-}
+};
 
 /* Agree to Terms */
 $(document).delegate('.agree', 'click', function(e) {
@@ -333,7 +338,7 @@ $(document).delegate('.agree', 'click', function(e) {
 			html += '        <h4 class="modal-title">' + $(element).text() + '</h4>';
 			html += '      </div>';
 			html += '      <div class="modal-body">' + data + '</div>';
-			html += '    </div';
+			html += '    </div>';
 			html += '  </div>';
 			html += '</div>';
 
@@ -350,23 +355,23 @@ $(document).delegate('.agree', 'click', function(e) {
 		return this.each(function() {
 			this.timer = null;
 			this.items = new Array();
-	
+
 			$.extend(this, option);
-	
+
 			$(this).attr('autocomplete', 'off');
-			
+
 			// Focus
 			$(this).on('focus', function() {
 				this.request();
 			});
-			
+
 			// Blur
 			$(this).on('blur', function() {
 				setTimeout(function(object) {
 					object.hide();
-				}, 200, this);				
+				}, 200, this);
 			});
-			
+
 			// Keydown
 			$(this).on('keydown', function(event) {
 				switch(event.keyCode) {
@@ -376,64 +381,64 @@ $(document).delegate('.agree', 'click', function(e) {
 					default:
 						this.request();
 						break;
-				}				
+				}
 			});
-			
+
 			// Click
 			this.click = function(event) {
 				event.preventDefault();
-	
+
 				value = $(event.target).parent().attr('data-value');
-	
+
 				if (value && this.items[value]) {
 					this.select(this.items[value]);
 				}
-			}
-			
+			};
+
 			// Show
 			this.show = function() {
 				var pos = $(this).position();
-	
+
 				$(this).siblings('ul.dropdown-menu').css({
 					top: pos.top + $(this).outerHeight(),
 					left: pos.left
 				});
-	
+
 				$(this).siblings('ul.dropdown-menu').show();
-			}
-			
+			};
+
 			// Hide
 			this.hide = function() {
 				$(this).siblings('ul.dropdown-menu').hide();
-			}		
-			
+			};
+
 			// Request
 			this.request = function() {
 				clearTimeout(this.timer);
-		
+
 				this.timer = setTimeout(function(object) {
 					object.source($(object).val(), $.proxy(object.response, object));
 				}, 200, this);
-			}
-			
+			};
+
 			// Response
 			this.response = function(json) {
 				html = '';
-	
+
 				if (json.length) {
 					for (i = 0; i < json.length; i++) {
 						this.items[json[i]['value']] = json[i];
 					}
-	
+
 					for (i = 0; i < json.length; i++) {
 						if (!json[i]['category']) {
 							html += '<li data-value="' + json[i]['value'] + '"><a href="#">' + json[i]['label'] + '</a></li>';
 						}
 					}
-	
+
 					// Get all the ones with a categories
 					var category = new Array();
-	
+
 					for (i = 0; i < json.length; i++) {
 						if (json[i]['category']) {
 							if (!category[json[i]['category']]) {
@@ -441,32 +446,31 @@ $(document).delegate('.agree', 'click', function(e) {
 								category[json[i]['category']]['name'] = json[i]['category'];
 								category[json[i]['category']]['item'] = new Array();
 							}
-	
+
 							category[json[i]['category']]['item'].push(json[i]);
 						}
 					}
-	
+
 					for (i in category) {
 						html += '<li class="dropdown-header">' + category[i]['name'] + '</li>';
-	
+
 						for (j = 0; j < category[i]['item'].length; j++) {
 							html += '<li data-value="' + category[i]['item'][j]['value'] + '"><a href="#">&nbsp;&nbsp;&nbsp;' + category[i]['item'][j]['label'] + '</a></li>';
 						}
 					}
 				}
-	
+
 				if (html) {
 					this.show();
 				} else {
 					this.hide();
 				}
-	
+
 				$(this).siblings('ul.dropdown-menu').html(html);
-			}
-			
+			};
+
 			$(this).after('<ul class="dropdown-menu"></ul>');
-			$(this).siblings('ul.dropdown-menu').delegate('a', 'click', $.proxy(this.click, this));	
-			
+			$(this).siblings('ul.dropdown-menu').delegate('a', 'click', $.proxy(this.click, this));
 		});
-	}
+	};
 })(window.jQuery);

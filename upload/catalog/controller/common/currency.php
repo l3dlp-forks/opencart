@@ -3,11 +3,9 @@ class ControllerCommonCurrency extends Controller {
 	public function index() {
 		$this->load->language('common/currency');
 
-		$data['text_currency'] = $this->language->get('text_currency');
+		$data['action'] = $this->url->link('common/currency/currency', 'language=' . $this->config->get('config_language'));
 
-		$data['action'] = $this->url->link('common/currency/currency', '', $this->request->server['HTTPS']);
-
-		$data['code'] = $this->currency->getCode();
+		$data['code'] = $this->session->data['currency'];
 
 		$this->load->model('localisation/currency');
 
@@ -27,7 +25,7 @@ class ControllerCommonCurrency extends Controller {
 		}
 
 		if (!isset($this->request->get['route'])) {
-			$data['redirect'] = $this->url->link('common/home');
+			$data['redirect'] = $this->url->link('common/home', 'language=' . $this->config->get('config_language'));
 		} else {
 			$url_data = $this->request->get;
 
@@ -43,28 +41,24 @@ class ControllerCommonCurrency extends Controller {
 				$url = '&' . urldecode(http_build_query($url_data, '', '&'));
 			}
 
-			$data['redirect'] = $this->url->link($route, $url, $this->request->server['HTTPS']);
+			$data['redirect'] = $this->url->link($route, 'language=' . $this->config->get('config_language') . $url);
 		}
 
-		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/common/currency.tpl')) {
-			return $this->load->view($this->config->get('config_template') . '/template/common/currency.tpl', $data);
-		} else {
-			return $this->load->view('default/template/common/currency.tpl', $data);
-		}
+		return $this->load->view('common/currency', $data);
 	}
 
 	public function currency() {
 		if (isset($this->request->post['code'])) {
-			$this->currency->set($this->request->post['code']);
-
+			$this->session->data['currency'] = $this->request->post['code'];
+		
 			unset($this->session->data['shipping_method']);
 			unset($this->session->data['shipping_methods']);
 		}
-
+		
 		if (isset($this->request->post['redirect'])) {
 			$this->response->redirect($this->request->post['redirect']);
 		} else {
-			$this->response->redirect($this->url->link('common/home'));
+			$this->response->redirect($this->url->link('common/home', 'language=' . $this->config->get('config_language')));
 		}
 	}
 }
